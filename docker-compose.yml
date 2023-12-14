@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  clickhouse:
+    # https://hub.docker.com/r/clickhouse/clickhouse-server/
+    image: clickhouse/clickhouse-server
+    ports:
+      - "8123:8123" # HTTP
+      - "9000:9000" # native
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    networks:
+      - metrics-net
+
+  go-server:
+    build: .
+    depends_on:
+      - clickhouse
+    ports:
+      - "50051:50051" # Assuming your gRPC server runs on port 50051
+    environment:
+      CLICKHOUSE_URL: "clickhouse:9000" # URL for the ClickHouse server
+    networks:
+      - metrics-net
+
+volumes:
+  clickhouse_data:
+
+networks:
+  metrics-net:
