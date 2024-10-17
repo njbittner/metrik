@@ -1,30 +1,72 @@
 version: '3.8'
 
 services:
-  clickhouse:
-    # https://hub.docker.com/r/clickhouse/clickhouse-server/
-    image: clickhouse/clickhouse-server
-    ports:
-      - "8123:8123" # HTTP
-      - "9000:9000" # native
+  otel-collector:
+    image: otel/opentelemetry-collector:0.48.0
+    command: [ "--config=/etc/otel-collector-config.yaml" ]
     volumes:
-      - clickhouse_data:/var/lib/clickhouse
-    networks:
-      - metrics-net
-
-  go-server:
-    build: .
-    depends_on:
-      - clickhouse
+      - ./collector/otel-collector-config.yaml:/etc/otel-collector-config.yaml
     ports:
-      - "50051:50051" # Assuming your gRPC server runs on port 50051
-    environment:
-      CLICKHOUSE_URL: "clickhouse:9000" # URL for the ClickHouse server
+      - "4317:4317"
     networks:
-      - metrics-net
+      - metrics-net-otel
+    environment:
+      - INFLUXDB_ADMIN_PASSWORD=${INFLUXDB_ADMIN_PASSWORD}
+      - INFLUXDB_DB=${INFLUXDB_DB}
+      - OTEL_EXPORTER_INFLUXDB_ENDPOINT=http://influxdb:8086
+      - OTEL_EXPORTER_INFLUXDB_USERNAME=admin
+      - OTEL_EXPORTER_INFLUXDB_PASSWORD=${INFLUXDB_ADMIN_PASSWORD}
+      - OTEL_EXPORTER_INFLUXDB_DATABASE=${INFLUXDB_DB}
+      - OTEL_EXPORTER_INFLUXDB_SKIP_TLS_VERIFY=true
+    depends_on:
+      - influxdb
 
-volumes:
-  clickhouse_data:
+  influxdb:
+    image: influxdb:1.8.10
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb_data:/var/lib/influxdb
+      - ./influxdb/influxdb.conf:/etc/influxdb/influxdb.conf
+    networks:
+      - metrics-net-otel
+    environment:
+      - INFLUXDB_ADMIN_USER=admin
+      - INFLUXDB_DB=${INFLUXDB_DB}
+      - INFLUXDB_ADMIN_PASSWORD=${INFLUXDB_ADMIN_PASSWORD}
+    healthcheck:
+      test: ["CMD", "influx", "-execute", "'SHOW DATABASES'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "200k"
+        max-file: "10"
+
+  grafana:
+    image: grafana/grafana:8.5.0
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
+      - ./grafana/datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+    networks:
+      - metrics-net-otel
+#    deploy:
+#      resources:
+#        limits:
+#          cpus: '1.0'
+#          memory: 512M
 
 networks:
-  metrics-net:
+  metrics-net-otel:
+    driver: bridge
+
+volumes:
+  influxdb_data:
+  grafana_data:
