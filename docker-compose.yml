@@ -58,6 +58,21 @@ services:
       options:
         max-size: "200k"
         max-file: "1"
+  nginx:
+    image: nginx:1.27.2-alpine
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+      - certbot_certs:/etc/letsencrypt
+      - certbot_challenges:/var/www/certbot
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - grafana
+      - influxdb
+    networks:
+      - metrics-net
+
 volumes:
   influxdb_data:
   grafana_data:
