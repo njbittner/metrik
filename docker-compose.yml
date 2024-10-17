@@ -1,21 +1,24 @@
 version: '3.8'
-
 services:
   influxdb:
-    image: influxdb:1.8.10
+    image: influxdb:2.7.6-alpine
     ports:
       - "8086:8086"
     volumes:
       - influxdb_data:/var/lib/influxdb
-      - ./influxdb/influxdb.conf:/etc/influxdb/influxdb.conf
     networks:
       - metrics-net
     environment:
-      - INFLUXDB_ADMIN_USER=admin
-      - INFLUXDB_DB=${INFLUXDB_DB}
-      - INFLUXDB_ADMIN_PASSWORD=${INFLUXDB_ADMIN_PASSWORD}
+      # NOTE: to do infinite retention, set DOCKER_INFLUXDB_INIT_RETENTION to 0
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=${INFLUXDB_ADMIN_UNAME}
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUXDB_ADMIN_PASSWORD}
+      - DOCKER_INFLUXDB_INIT_ORG=${INFLUXDB_ORG}
+      - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUXDB_BUCKET}
+      - DOCKER_INFLUXDB_INIT_RETENTION=0
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUXDB_ADMIN_TOKEN}
     healthcheck:
-      test: ["CMD", "influx", "-execute", "'SHOW DATABASES'"]
+      test: [ "CMD", "influx", "ping" ]
       interval: 30s
       timeout: 10s
       retries: 3
