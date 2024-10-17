@@ -9,7 +9,7 @@ services:
       - influxdb_data:/var/lib/influxdb
       - ./influxdb/influxdb.conf:/etc/influxdb/influxdb.conf
     networks:
-      - metrics-net-otel
+      - metrics-net
     environment:
       - INFLUXDB_ADMIN_USER=admin
       - INFLUXDB_DB=${INFLUXDB_DB}
@@ -36,7 +36,7 @@ services:
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
     networks:
-      - metrics-net-otel
+      - metrics-net
 #    deploy:
 #      resources:
 #        limits:
@@ -44,7 +44,7 @@ services:
 #          memory: 512M
 
 networks:
-  metrics-net-otel:
+  metrics-net:
     driver: bridge
 
 volumes:
