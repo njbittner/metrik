@@ -1,26 +1,6 @@
 version: '3.8'
 
 services:
-  otel-collector:
-    image: otel/opentelemetry-collector:0.48.0
-    command: [ "--config=/etc/otel-collector-config.yaml" ]
-    volumes:
-      - ./collector/otel-collector-config.yaml:/etc/otel-collector-config.yaml
-    ports:
-      - "4317:4317"
-    networks:
-      - metrics-net-otel
-    environment:
-      - INFLUXDB_ADMIN_PASSWORD=${INFLUXDB_ADMIN_PASSWORD}
-      - INFLUXDB_DB=${INFLUXDB_DB}
-      - OTEL_EXPORTER_INFLUXDB_ENDPOINT=http://influxdb:8086
-      - OTEL_EXPORTER_INFLUXDB_USERNAME=admin
-      - OTEL_EXPORTER_INFLUXDB_PASSWORD=${INFLUXDB_ADMIN_PASSWORD}
-      - OTEL_EXPORTER_INFLUXDB_DATABASE=${INFLUXDB_DB}
-      - OTEL_EXPORTER_INFLUXDB_SKIP_TLS_VERIFY=true
-    depends_on:
-      - influxdb
-
   influxdb:
     image: influxdb:1.8.10
     ports:
